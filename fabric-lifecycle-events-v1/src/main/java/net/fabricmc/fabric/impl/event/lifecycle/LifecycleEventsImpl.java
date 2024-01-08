@@ -16,9 +16,10 @@
 
 package net.fabricmc.fabric.impl.event.lifecycle;
 
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.entity.Entity;
-import net.minecraft.world.chunk.WorldChunk;
+import net.minecraft.core.block.entity.TileEntity;
+import net.minecraft.core.entity.Entity;
+import net.minecraft.core.world.chunk.Chunk;
+
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents;
@@ -41,20 +42,20 @@ public final class LifecycleEventsImpl implements ModInitializer {
 		// Fire block entity unload events.
 		// This handles the edge case where going through a portal will cause block entities to unload without warning.
 		ServerChunkEvents.CHUNK_UNLOAD.register((world, chunk) -> {
-			for (BlockEntity blockEntity : chunk.getBlockEntities().values()) {
+			for (TileEntity blockEntity : chunk.tileEntityMap.values()) {
 				ServerBlockEntityEvents.BLOCK_ENTITY_UNLOAD.invoker().onUnload(blockEntity, world);
 			}
 		});
 
 		// We use the world unload event so worlds that are dynamically hot(un)loaded get (block) entity unload events fired when shut down.
 		ServerWorldEvents.UNLOAD.register((server, world) -> {
-			for (WorldChunk chunk : ((LoadedChunksCache) world).fabric_getLoadedChunks()) {
-				for (BlockEntity blockEntity : chunk.getBlockEntities().values()) {
+			for (Chunk chunk : ((LoadedChunksCache) world).fabric_getLoadedChunks()) {
+				for (TileEntity blockEntity : chunk.tileEntityMap.values()) {
 					ServerBlockEntityEvents.BLOCK_ENTITY_UNLOAD.invoker().onUnload(blockEntity, world);
 				}
 			}
 
-			for (Entity entity : world.iterateEntities()) {
+			for (Entity entity : world.loadedEntityList) {
 				ServerEntityEvents.ENTITY_UNLOAD.invoker().onUnload(entity, world);
 			}
 		});
