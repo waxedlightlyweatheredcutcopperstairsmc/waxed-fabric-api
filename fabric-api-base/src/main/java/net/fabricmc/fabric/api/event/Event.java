@@ -18,7 +18,7 @@ package net.fabricmc.fabric.api.event;
 
 import org.jetbrains.annotations.ApiStatus;
 
-import net.minecraft.util.Identifier;
+import net.fabricmc.fabric.api.util.Identifier;
 
 /**
  * Base class for Fabric's event implementations.

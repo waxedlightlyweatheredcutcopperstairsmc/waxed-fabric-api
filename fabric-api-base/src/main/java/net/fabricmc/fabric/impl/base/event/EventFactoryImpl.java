@@ -29,9 +29,8 @@ import java.util.function.Function;
 
 import com.google.common.collect.MapMaker;
 
-import net.minecraft.util.Identifier;
-
 import net.fabricmc.fabric.api.event.Event;
+import net.fabricmc.fabric.api.util.Identifier;
 
 public final class EventFactoryImpl {
 	private static final Set<ArrayBackedEvent<?>> ARRAY_BACKED_EVENTS
