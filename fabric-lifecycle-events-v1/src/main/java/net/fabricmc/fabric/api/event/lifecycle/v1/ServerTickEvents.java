@@ -17,10 +17,11 @@
 package net.fabricmc.fabric.api.event.lifecycle.v1;
 
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.world.ServerWorld;
 
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
+
+import net.minecraft.server.world.WorldServer;
 
 public final class ServerTickEvents {
 	private ServerTickEvents() {
@@ -76,11 +77,11 @@ public final class ServerTickEvents {
 
 	@FunctionalInterface
 	public interface StartWorldTick {
-		void onStartTick(ServerWorld world);
+		void onStartTick(WorldServer world);
 	}
 
 	@FunctionalInterface
 	public interface EndWorldTick {
-		void onEndTick(ServerWorld world);
+		void onEndTick(WorldServer world);
 	}
 }
