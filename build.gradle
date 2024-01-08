@@ -4,7 +4,7 @@ plugins {
 	id "idea"
 	id "maven-publish"
 	id 'jacoco'
-	id "org.quiltmc.loom" version "1.+" apply false
+	id "babric-loom" version "1.1.+" apply false
 	id "com.diffplug.spotless" version "6.20.0"
 	id "org.ajoberstar.grgit" version "3.1.0"
 	id "me.modmuss50.remotesign" version "0.4.0" apply false
@@ -59,16 +59,16 @@ def getBranch() {
 
 def moduleDependencies(project, List<String> depNames) {
 	def deps = depNames.iterator().collect { project.dependencies.project(path: ":$it", configuration: 'namedElements') }
-	def clientOutputs = depNames.iterator().collect { findProject(":$it").sourceSets.client.output }
+//	def clientOutputs = depNames.iterator().collect { findProject(":$it").sourceSets.client.output }
 
 	project.dependencies {
 		deps.each {
 			api it
 		}
 
-		clientOutputs.each {
-			clientImplementation it
-		}
+//		clientOutputs.each {
+//			clientImplementation it
+//		}
 	}
 
 	// As we manually handle the maven artifacts, we need to also manually specify the deps.
@@ -92,16 +92,16 @@ def moduleDependencies(project, List<String> depNames) {
 
 def testDependencies(project, List<String> depNames) {
 	def deps = depNames.iterator().collect { project.dependencies.project(path: ":$it", configuration: 'namedElements') }
-	def clientOutputs = depNames.iterator().collect { findProject(":$it").sourceSets.client.output }
+//	def clientOutputs = depNames.iterator().collect { findProject(":$it").sourceSets.client.output }
 
 	project.dependencies {
 		deps.each {
 			testmodImplementation it
 		}
 
-		clientOutputs.each {
-			testmodClientImplementation it
-		}
+//		clientOutputs.each {
+//			testmodClientImplementation it
+//		}
 	}
 }
 
@@ -122,10 +122,10 @@ allprojects {
 
 		useDummyForTesting = ENV.SIGNING_SERVER == null
 
-		afterEvaluate {
-			// PGP sign all maven publications.
-			sign publishing.publications.mavenJava
-		}
+//		afterEvaluate {
+//			// PGP sign all maven publications.
+//			sign publishing.publications.mavenJava
+//		}
 	}
 
 	publishing {
@@ -138,7 +138,7 @@ allprojects {
 
 	apply plugin: "java-library"
 	apply plugin: "checkstyle"
-	apply plugin: "org.quiltmc.loom"
+	apply plugin: "babric-loom"
 	apply plugin: "com.diffplug.spotless"
 
 	tasks.withType(JavaCompile).configureEach {
@@ -151,7 +151,11 @@ allprojects {
 	}
 
 	loom {
-		splitEnvironmentSourceSets()
+		gluedMinecraftJar()
+		noIntermediateMappings()
+		customMinecraftManifest.set("https://github.com/Turnip-Labs/bta-manifest-repo/releases/download/v${project.bta_version}/${project.bta_version}.json")
+
+//		splitEnvironmentSourceSets()
 	}
 
 	sourceSets {
@@ -163,11 +167,11 @@ allprojects {
 		testmodClient {
 			compileClasspath += main.compileClasspath
 			runtimeClasspath += main.runtimeClasspath
-			compileClasspath += client.compileClasspath
-			runtimeClasspath += client.runtimeClasspath
-
-			compileClasspath += testmod.compileClasspath
-			runtimeClasspath += testmod.runtimeClasspath
+//			compileClasspath += client.compileClasspath
+//			runtimeClasspath += client.runtimeClasspath
+//
+//			compileClasspath += testmod.compileClasspath
+//			runtimeClasspath += testmod.runtimeClasspath
 		}
 
 		test {
@@ -178,6 +182,7 @@ allprojects {
 
 	loom {
 		runtimeOnlyLog4j = true
+
 
 		runs {
 			testmodClient {
@@ -206,7 +211,7 @@ allprojects {
 
 		loom.mods.register(p.name) {
 			sourceSet p.sourceSets.main
-			sourceSet p.sourceSets.client
+//			sourceSet p.sourceSets.client
 		}
 
 		loom.mods.register(p.name + "-testmod") {
@@ -215,15 +220,77 @@ allprojects {
 		}
 	}
 
+	repositories {
+		mavenCentral()
+		maven {
+			name = 'Babric'
+			url = 'https://maven.glass-launcher.net/babric'
+		}
+		maven {
+			name = 'Fabric'
+			url = 'https://maven.fabricmc.net/'
+		}
+		ivy {
+			url = "https://github.com/Better-than-Adventure"
+			patternLayout {
+				artifact "[organisation]/releases/download/v[revision]/[module].jar"
+				m2compatible = true
+			}
+			metadataSources { artifact() }
+		}
+		ivy {
+			url = "https://github.com/Turnip-Labs"
+			patternLayout {
+				artifact "[organisation]/releases/download/v[revision]/[module]-[revision].jar"
+				m2compatible = true
+			}
+			metadataSources { artifact() }
+		}
+		ivy {
+			url = "https://piston-data.mojang.com"
+			patternLayout {
+				artifact "v1/[organisation]/[revision]/[module].jar"
+				m2compatible = true
+			}
+			metadataSources { artifact() }
+		}
+		ivy {
+			url = "https://github.com/MartinSVK12"
+			patternLayout {
+				artifact "[organisation]/releases/download/[revision]/[module]-[revision].jar"
+				m2compatible = true
+			}
+			metadataSources { artifact() }
+		}
+	}
+
 	dependencies {
-		minecraft "com.mojang:minecraft:$rootProject.minecraft_version"
-		mappings "net.fabricmc:yarn:${rootProject.minecraft_version}${project.yarn_version}:v2"
-		modApi "net.fabricmc:fabric-loader:${project.loader_version}"
+		minecraft "bta-download-repo:bta:${project.bta_version}"
+		mappings loom.layered() {}
+
+		modImplementation "bta-provider:bta-provider:babric"
+		modRuntimeOnly "objects:client:43db9b498cb67058d2e12d394e6507722e71bb45"
+
+		modApi "babric:fabric-loader:${project.babricbta_loader_version}"
+		include(implementation(annotationProcessor("io.github.llamalad7:mixinextras-fabric:0.2.2")))
 
 		testmodImplementation sourceSets.main.output
 		testmodClientImplementation sourceSets.main.output
-		testmodClientImplementation sourceSets.client.output
+//		testmodClientImplementation sourceSets.client.output
 		testmodClientImplementation sourceSets.testmod.output
+
+		implementation "org.slf4j:slf4j-api:1.8.0-beta4"
+		implementation "org.apache.logging.log4j:log4j-slf4j18-impl:2.16.0"
+		implementation "org.apache.commons:commons-lang3:3.13.0"
+
+		implementation 'com.google.guava:guava:30.0-jre'
+		implementation group: 'com.google.code.gson', name: 'gson', version: '2.8.9'
+
+		var log4jVersion = "2.20.0"
+		implementation("org.apache.logging.log4j:log4j-core:${log4jVersion}")
+		implementation("org.apache.logging.log4j:log4j-api:${log4jVersion}")
+		implementation("org.apache.logging.log4j:log4j-1.2-api:${log4jVersion}")
+		implementation("log4j:apache-log4j-extras:1.2.17")
 
 		testImplementation "net.fabricmc:fabric-loader-junit:${project.loader_version}"
 		testImplementation sourceSets.testmodClient.output
@@ -379,10 +446,10 @@ javadoc {
 		}
 
 		source(it.sourceSets.main.allJava)
-		source(it.sourceSets.client.allJava)
+		//source(it.sourceSets.client.allJava)
 	}
 
-	classpath = files(sourceSets.main.compileClasspath, sourceSets.client.compileClasspath)
+	classpath = files(sourceSets.main.compileClasspath)//, sourceSets.client.compileClasspath)
 	include("**/api/**")
 	failOnError true
 }
@@ -433,18 +500,18 @@ loom {
 		}
 	}
 }
-test.dependsOn runGametest
+// test.dependsOn runGametest
 
-def coverageTasks = [
-	runGametestCoverage,
-	runAutoTestClientCoverage
-]
+//def coverageTasks = [
+//	runGametestCoverage,
+//	runAutoTestClientCoverage
+//]
 
-jacoco {
-	coverageTasks.forEach {
-		applyTo it
-	}
-}
+//jacoco {
+//	coverageTasks.forEach {
+//		applyTo it
+//	}
+//}
 
 tasks.register('coverage', JacocoReport) {
 	dependsOn coverageTasks
@@ -470,7 +537,7 @@ configurations {
 	productionRuntime {
 		extendsFrom configurations.minecraftLibraries
 		extendsFrom configurations.loaderLibraries
-		extendsFrom configurations.minecraftRuntimeLibraries
+//		extendsFrom configurations.minecraftRuntimeLibraries
 	}
 	productionRuntimeServer
 }
@@ -482,7 +549,7 @@ dependencies {
 	productionRuntimeServer "net.fabricmc:fabric-installer:${project.installer_version}:server"
 }
 
-import net.fabricmc.loom.util.Platform
+// import net.fabricmc.loom.util.Platform
 
 // This is very far beyond loom's API if you copy this, you're on your own.
 tasks.register('runProductionAutoTestClient', JavaExec) {
@@ -606,15 +673,15 @@ subprojects {
 		// Make all modules depend on the gametest api (and thus res loader) to try and promote its usage.
 		if (project.name != "fabric-gametest-api-v1") {
 			testmodImplementation project(path: ':fabric-gametest-api-v1', configuration: 'namedElements')
-			testmodClientImplementation project(":fabric-gametest-api-v1").sourceSets.client.output
+//			testmodClientImplementation project(":fabric-gametest-api-v1").sourceSets.client.output
 			testmodImplementation project(path: ':fabric-resource-loader-v0', configuration: 'namedElements')
-			testmodClientImplementation project(":fabric-resource-loader-v0").sourceSets.client.output
+//			testmodClientImplementation project(":fabric-resource-loader-v0").sourceSets.client.output
 		}
 
 		// Make all testmods run with registry-sync-v0 as it is required to register new objects.
 		if (project.name != "fabric-registry-sync-v0") {
  			testmodRuntimeOnly project(path: ':fabric-registry-sync-v0', configuration: 'namedElements')
-			testmodClientImplementation project(":fabric-registry-sync-v0").sourceSets.client.output
+//			testmodClientImplementation project(":fabric-registry-sync-v0").sourceSets.client.output
 		}
 	}
 
@@ -723,10 +790,10 @@ dependencies {
 			}
 
 			api project(path: "${it.path}", configuration: "namedElements")
-			clientImplementation project("${it.path}:").sourceSets.client.output
+//			clientImplementation project("${it.path}:").sourceSets.client.output
 
 			testmodImplementation project("${it.path}:").sourceSets.testmod.output
-			testmodClientImplementation project("${it.path}:").sourceSets.testmodClient.output
+	//		testmodClientImplementation project("${it.path}:").sourceSets.testmodClient.output
 		}
 	}
 }
