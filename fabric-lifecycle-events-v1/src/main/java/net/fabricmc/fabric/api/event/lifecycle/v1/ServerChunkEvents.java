@@ -16,8 +16,8 @@
 
 package net.fabricmc.fabric.api.event.lifecycle.v1;
 
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.world.chunk.WorldChunk;
+import net.minecraft.core.world.chunk.Chunk;
+import net.minecraft.server.world.WorldServer;
 
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
@@ -50,11 +50,11 @@ public final class ServerChunkEvents {
 
 	@FunctionalInterface
 	public interface Load {
-		void onChunkLoad(ServerWorld world, WorldChunk chunk);
+		void onChunkLoad(WorldServer world, Chunk chunk);
 	}
 
 	@FunctionalInterface
 	public interface Unload {
-		void onChunkUnload(ServerWorld world, WorldChunk chunk);
+		void onChunkUnload(WorldServer world, Chunk chunk);
 	}
 }
