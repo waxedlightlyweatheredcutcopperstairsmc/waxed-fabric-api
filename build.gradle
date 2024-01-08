@@ -142,7 +142,7 @@ allprojects {
 	apply plugin: "com.diffplug.spotless"
 
 	tasks.withType(JavaCompile).configureEach {
-		it.options.release = 17
+		it.options.release = 8
 	}
 
 	java {
